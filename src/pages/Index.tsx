@@ -26,35 +26,27 @@ const Index = () => {
       <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-4">
         <StatsCard
           title="Total Inspections"
-          value="1,234"
-          change="+12% from last month"
-          changeType="positive"
-          icon={Shield}
+          value="0"
           subtitle="This month"
+          icon={Shield}
         />
         <StatsCard
           title="Quality Score"
-          value="94.5%"
-          change="+2.1% improvement"
-          changeType="positive"
-          icon={TrendingUp}
+          value="--"
           subtitle="Average score"
+          icon={TrendingUp}
         />
         <StatsCard
           title="Active Issues"
-          value="8"
-          change="-4 from yesterday"
-          changeType="positive"
-          icon={AlertTriangle}
+          value="0"
           subtitle="Requires attention"
+          icon={AlertTriangle}
         />
         <StatsCard
           title="Pass Rate"
-          value="96.2%"
-          change="+1.5% improvement"
-          changeType="positive"
-          icon={CheckCircle2}
+          value="--"
           subtitle="This week"
+          icon={CheckCircle2}
         />
       </div>
 
@@ -71,17 +63,15 @@ const Index = () => {
         <div className="space-y-6">
           <StatsCard
             title="Inspectors Online"
-            value="12"
+            value="1"
             subtitle="Active now"
             icon={Users}
           />
           <StatsCard
             title="Avg. Inspection Time"
-            value="24 min"
-            change="-3 min faster"
-            changeType="positive"
-            icon={Clock}
+            value="--"
             subtitle="Per inspection"
+            icon={Clock}
           />
         </div>
       </div>

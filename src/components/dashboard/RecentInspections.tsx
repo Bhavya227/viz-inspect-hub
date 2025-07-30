@@ -13,44 +13,8 @@ interface Inspection {
   issues: number;
 }
 
-const inspections: Inspection[] = [
-  {
-    id: "INS-001",
-    productName: "Electronic Component A1",
-    inspector: "John Smith",
-    status: "passed",
-    score: 96,
-    date: "2024-01-15",
-    issues: 0
-  },
-  {
-    id: "INS-002",
-    productName: "Mechanical Part B2",
-    inspector: "Sarah Johnson",
-    status: "failed",
-    score: 72,
-    date: "2024-01-15",
-    issues: 3
-  },
-  {
-    id: "INS-003",
-    productName: "Circuit Board C3",
-    inspector: "Mike Davis",
-    status: "pending",
-    score: 0,
-    date: "2024-01-15",
-    issues: 0
-  },
-  {
-    id: "INS-004",
-    productName: "Housing Unit D4",
-    inspector: "Emily Wilson",
-    status: "passed",
-    score: 94,
-    date: "2024-01-14",
-    issues: 1
-  }
-];
+// Dynamic data - will be populated when user performs inspections
+const inspections: Inspection[] = [];
 
 export function RecentInspections() {
   const getStatusBadge = (status: Inspection["status"]) => {
@@ -76,39 +40,46 @@ export function RecentInspections() {
       </CardHeader>
       <CardContent>
         <div className="space-y-4">
-          {inspections.map((inspection) => (
-            <div 
-              key={inspection.id} 
-              className="flex items-center justify-between p-4 rounded-lg border border-border/50 hover:bg-accent/50 transition-colors"
-            >
-              <div className="flex-1 space-y-1">
-                <div className="flex items-center gap-3">
-                  <h4 className="font-medium text-sm">{inspection.productName}</h4>
-                  {getStatusBadge(inspection.status)}
+          {inspections.length > 0 ? (
+            inspections.map((inspection) => (
+              <div 
+                key={inspection.id} 
+                className="flex items-center justify-between p-4 rounded-lg border border-border/50 hover:bg-accent/50 transition-colors"
+              >
+                <div className="flex-1 space-y-1">
+                  <div className="flex items-center gap-3">
+                    <h4 className="font-medium text-sm">{inspection.productName}</h4>
+                    {getStatusBadge(inspection.status)}
+                  </div>
+                  <div className="flex items-center gap-4 text-xs text-muted-foreground">
+                    <span>ID: {inspection.id}</span>
+                    <span>Inspector: {inspection.inspector}</span>
+                    <span>Date: {inspection.date}</span>
+                    {inspection.status !== "pending" && (
+                      <span>Score: {inspection.score}%</span>
+                    )}
+                    {inspection.issues > 0 && (
+                      <span className="text-destructive">Issues: {inspection.issues}</span>
+                    )}
+                  </div>
                 </div>
-                <div className="flex items-center gap-4 text-xs text-muted-foreground">
-                  <span>ID: {inspection.id}</span>
-                  <span>Inspector: {inspection.inspector}</span>
-                  <span>Date: {inspection.date}</span>
-                  {inspection.status !== "pending" && (
-                    <span>Score: {inspection.score}%</span>
-                  )}
-                  {inspection.issues > 0 && (
-                    <span className="text-destructive">Issues: {inspection.issues}</span>
-                  )}
+                
+                <div className="flex items-center gap-2">
+                  <Button variant="ghost" size="icon" className="h-8 w-8">
+                    <Eye className="h-4 w-4" />
+                  </Button>
+                  <Button variant="ghost" size="icon" className="h-8 w-8">
+                    <Download className="h-4 w-4" />
+                  </Button>
                 </div>
               </div>
-              
-              <div className="flex items-center gap-2">
-                <Button variant="ghost" size="icon" className="h-8 w-8">
-                  <Eye className="h-4 w-4" />
-                </Button>
-                <Button variant="ghost" size="icon" className="h-8 w-8">
-                  <Download className="h-4 w-4" />
-                </Button>
-              </div>
+            ))
+          ) : (
+            <div className="text-center py-8 text-muted-foreground">
+              <p>No inspections yet</p>
+              <p className="text-sm mt-1">Start performing quality inspections to see data here</p>
             </div>
-          ))}
+          )}
         </div>
       </CardContent>
     </Card>

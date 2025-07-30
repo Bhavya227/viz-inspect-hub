@@ -1,13 +1,9 @@
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer } from "recharts";
 
+// Dynamic data - will be populated when user performs inspections
 const qualityData = [
-  { month: "Jan", score: 92, defects: 8, inspections: 156 },
-  { month: "Feb", score: 94, defects: 6, inspections: 142 },
-  { month: "Mar", score: 89, defects: 11, inspections: 178 },
-  { month: "Apr", score: 96, defects: 4, inspections: 165 },
-  { month: "May", score: 91, defects: 9, inspections: 189 },
-  { month: "Jun", score: 98, defects: 2, inspections: 201 },
+  { month: "Current", score: 0, defects: 0, inspections: 0 },
 ];
 
 export function QualityChart() {

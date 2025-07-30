@@ -22,20 +22,13 @@ import {
   AlertCircle
 } from "lucide-react";
 
+// Dynamic data - will be populated when user performs inspections
 const monthlyData = [
-  { month: "Jan", inspections: 156, passed: 148, failed: 8, score: 92 },
-  { month: "Feb", inspections: 142, passed: 136, failed: 6, score: 94 },
-  { month: "Mar", inspections: 178, passed: 167, failed: 11, score: 89 },
-  { month: "Apr", inspections: 165, passed: 161, failed: 4, score: 96 },
-  { month: "May", inspections: 189, passed: 180, failed: 9, score: 91 },
-  { month: "Jun", inspections: 201, passed: 197, failed: 4, score: 98 },
+  { month: "Current", inspections: 0, passed: 0, failed: 0, score: 0 },
 ];
 
 const defectTrends = [
-  { week: "Week 1", scratches: 12, dimensional: 8, color: 5, assembly: 3 },
-  { week: "Week 2", scratches: 15, dimensional: 6, color: 7, assembly: 2 },
-  { week: "Week 3", scratches: 9, dimensional: 10, color: 4, assembly: 5 },
-  { week: "Week 4", scratches: 7, dimensional: 5, color: 3, assembly: 1 },
+  { week: "Current", scratches: 0, dimensional: 0, color: 0, assembly: 0 },
 ];
 
 export default function Analytics() {
@@ -61,54 +54,54 @@ export default function Analytics() {
 
       {/* Key Insights */}
       <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-4">
-        <Card className="border-l-4 border-l-success">
+        <Card className="border-l-4 border-l-muted">
           <CardContent className="p-4">
             <div className="flex items-center justify-between">
               <div>
                 <p className="text-sm text-muted-foreground">Quality Improvement</p>
-                <p className="text-2xl font-bold text-success">+6.5%</p>
+                <p className="text-2xl font-bold text-muted-foreground">--</p>
                 <p className="text-xs text-muted-foreground">vs last quarter</p>
               </div>
-              <TrendingUp className="h-8 w-8 text-success" />
+              <TrendingUp className="h-8 w-8 text-muted-foreground" />
             </div>
           </CardContent>
         </Card>
 
-        <Card className="border-l-4 border-l-primary">
+        <Card className="border-l-4 border-l-muted">
           <CardContent className="p-4">
             <div className="flex items-center justify-between">
               <div>
                 <p className="text-sm text-muted-foreground">Efficiency Gain</p>
-                <p className="text-2xl font-bold text-primary">+15%</p>
+                <p className="text-2xl font-bold text-muted-foreground">--</p>
                 <p className="text-xs text-muted-foreground">inspection speed</p>
               </div>
-              <Target className="h-8 w-8 text-primary" />
+              <Target className="h-8 w-8 text-muted-foreground" />
             </div>
           </CardContent>
         </Card>
 
-        <Card className="border-l-4 border-l-warning">
+        <Card className="border-l-4 border-l-muted">
           <CardContent className="p-4">
             <div className="flex items-center justify-between">
               <div>
                 <p className="text-sm text-muted-foreground">Defect Reduction</p>
-                <p className="text-2xl font-bold text-warning">-28%</p>
+                <p className="text-2xl font-bold text-muted-foreground">--</p>
                 <p className="text-xs text-muted-foreground">vs last month</p>
               </div>
-              <TrendingDown className="h-8 w-8 text-warning" />
+              <TrendingDown className="h-8 w-8 text-muted-foreground" />
             </div>
           </CardContent>
         </Card>
 
-        <Card className="border-l-4 border-l-destructive">
+        <Card className="border-l-4 border-l-muted">
           <CardContent className="p-4">
             <div className="flex items-center justify-between">
               <div>
                 <p className="text-sm text-muted-foreground">Critical Issues</p>
-                <p className="text-2xl font-bold text-destructive">3</p>
+                <p className="text-2xl font-bold text-muted-foreground">0</p>
                 <p className="text-xs text-muted-foreground">require attention</p>
               </div>
-              <AlertCircle className="h-8 w-8 text-destructive" />
+              <AlertCircle className="h-8 w-8 text-muted-foreground" />
             </div>
           </CardContent>
         </Card>
@@ -175,29 +168,9 @@ export default function Analytics() {
             <CardTitle>Top Performing Inspectors</CardTitle>
           </CardHeader>
           <CardContent>
-            <div className="space-y-4">
-              {[
-                { name: "Sarah Johnson", score: 98.5, inspections: 145 },
-                { name: "Mike Davis", score: 96.8, inspections: 132 },
-                { name: "John Smith", score: 95.2, inspections: 158 },
-                { name: "Emily Wilson", score: 94.7, inspections: 124 }
-              ].map((inspector, index) => (
-                <div key={inspector.name} className="flex items-center justify-between p-3 rounded-lg bg-accent/20">
-                  <div className="flex items-center gap-3">
-                    <Badge variant="secondary" className="w-8 h-8 rounded-full flex items-center justify-center">
-                      {index + 1}
-                    </Badge>
-                    <div>
-                      <p className="font-medium">{inspector.name}</p>
-                      <p className="text-sm text-muted-foreground">{inspector.inspections} inspections</p>
-                    </div>
-                  </div>
-                  <div className="text-right">
-                    <p className="font-semibold text-success">{inspector.score}%</p>
-                    <p className="text-xs text-muted-foreground">avg. score</p>
-                  </div>
-                </div>
-              ))}
+            <div className="text-center py-8 text-muted-foreground">
+              <p>No inspector data yet</p>
+              <p className="text-sm mt-1">Start performing inspections to see rankings</p>
             </div>
           </CardContent>
         </Card>
@@ -207,33 +180,9 @@ export default function Analytics() {
             <CardTitle>Quality Alerts</CardTitle>
           </CardHeader>
           <CardContent>
-            <div className="space-y-4">
-              <div className="flex items-start gap-3 p-3 rounded-lg border border-destructive/20 bg-destructive/5">
-                <AlertCircle className="h-5 w-5 text-destructive mt-0.5" />
-                <div>
-                  <p className="font-medium text-destructive">High Defect Rate Detected</p>
-                  <p className="text-sm text-muted-foreground">Station B showing 15% defect rate increase</p>
-                  <p className="text-xs text-muted-foreground mt-1">2 hours ago</p>
-                </div>
-              </div>
-              
-              <div className="flex items-start gap-3 p-3 rounded-lg border border-warning/20 bg-warning/5">
-                <TrendingDown className="h-5 w-5 text-warning mt-0.5" />
-                <div>
-                  <p className="font-medium text-warning">Quality Score Decline</p>
-                  <p className="text-sm text-muted-foreground">Product Line C showing gradual decline</p>
-                  <p className="text-xs text-muted-foreground mt-1">1 day ago</p>
-                </div>
-              </div>
-
-              <div className="flex items-start gap-3 p-3 rounded-lg border border-primary/20 bg-primary/5">
-                <Target className="h-5 w-5 text-primary mt-0.5" />
-                <div>
-                  <p className="font-medium text-primary">Target Achievement</p>
-                  <p className="text-sm text-muted-foreground">Monthly quality target exceeded by 3%</p>
-                  <p className="text-xs text-muted-foreground mt-1">3 days ago</p>
-                </div>
-              </div>
+            <div className="text-center py-8 text-muted-foreground">
+              <p>No alerts yet</p>
+              <p className="text-sm mt-1">System will notify you of any quality issues</p>
             </div>
           </CardContent>
         </Card>
