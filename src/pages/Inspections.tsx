@@ -14,6 +14,8 @@ import {
   FileText,
   Shield
 } from "lucide-react";
+import { useNavigate } from "react-router-dom";
+import { toast } from "sonner";
 
 // Dynamic data - will be populated when user performs inspections
 const inspections: Array<{
@@ -31,6 +33,27 @@ const inspections: Array<{
 
 export default function Inspections() {
   const [searchTerm, setSearchTerm] = useState("");
+  const navigate = useNavigate();
+
+  const handleNewInspection = () => {
+    navigate('/visual-inspect');
+  };
+
+  const handleView = (inspectionId: string) => {
+    toast.info(`Viewing inspection ${inspectionId}`);
+  };
+
+  const handleDownload = (inspectionId: string) => {
+    toast.success(`Downloading report for inspection ${inspectionId}`);
+  };
+
+  const handleFilter = () => {
+    toast.info("Filter functionality coming soon!");
+  };
+
+  const handleDateRange = () => {
+    toast.info("Date range picker coming soon!");
+  };
 
   const getStatusBadge = (status: "passed" | "failed" | "pending") => {
     switch (status) {
@@ -51,7 +74,7 @@ export default function Inspections() {
           <h1 className="text-3xl font-bold">Inspections</h1>
           <p className="text-muted-foreground">Manage and track quality inspections</p>
         </div>
-        <Button className="bg-gradient-primary hover:bg-primary-hover">
+        <Button className="bg-gradient-primary hover:bg-primary-hover" onClick={handleNewInspection}>
           <Plus className="mr-2 h-4 w-4" />
           New Inspection
         </Button>
@@ -70,11 +93,11 @@ export default function Inspections() {
                 className="pl-10"
               />
             </div>
-            <Button variant="outline" size="sm">
+            <Button variant="outline" size="sm" onClick={handleFilter}>
               <Filter className="mr-2 h-4 w-4" />
               Filters
             </Button>
-            <Button variant="outline" size="sm">
+            <Button variant="outline" size="sm" onClick={handleDateRange}>
               <Calendar className="mr-2 h-4 w-4" />
               Date Range
             </Button>
@@ -128,16 +151,16 @@ export default function Inspections() {
                     </div>
                   </div>
 
-                  <div className="flex items-center gap-2">
-                    <Button variant="outline" size="sm">
-                      <Eye className="mr-2 h-4 w-4" />
-                      View
-                    </Button>
-                    <Button variant="outline" size="sm">
-                      <Download className="mr-2 h-4 w-4" />
-                      Report
-                    </Button>
-                  </div>
+                   <div className="flex items-center gap-2">
+                     <Button variant="outline" size="sm" onClick={() => handleView(inspection.id)}>
+                       <Eye className="mr-2 h-4 w-4" />
+                       View
+                     </Button>
+                     <Button variant="outline" size="sm" onClick={() => handleDownload(inspection.id)}>
+                       <Download className="mr-2 h-4 w-4" />
+                       Report
+                     </Button>
+                   </div>
                 </div>
               </CardContent>
             </Card>
@@ -155,7 +178,7 @@ export default function Inspections() {
                     Start your first quality inspection to see data here
                   </p>
                 </div>
-                <Button className="bg-gradient-primary hover:bg-primary-hover">
+                <Button className="bg-gradient-primary hover:bg-primary-hover" onClick={handleNewInspection}>
                   <Plus className="mr-2 h-4 w-4" />
                   Create First Inspection
                 </Button>

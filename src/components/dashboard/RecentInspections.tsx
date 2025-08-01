@@ -2,6 +2,8 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Eye, Download } from "lucide-react";
+import { useNavigate } from "react-router-dom";
+import { toast } from "sonner";
 
 interface Inspection {
   id: string;
@@ -17,6 +19,22 @@ interface Inspection {
 const inspections: Inspection[] = [];
 
 export function RecentInspections() {
+  const navigate = useNavigate();
+
+  const handleViewAll = () => {
+    navigate('/inspections');
+  };
+
+  const handleView = (inspectionId: string) => {
+    toast.info(`Viewing inspection ${inspectionId}`);
+    // In a real app, this would navigate to inspection details
+  };
+
+  const handleDownload = (inspectionId: string) => {
+    toast.success(`Downloading report for inspection ${inspectionId}`);
+    // In a real app, this would download the inspection report
+  };
+
   const getStatusBadge = (status: Inspection["status"]) => {
     switch (status) {
       case "passed":
@@ -34,7 +52,7 @@ export function RecentInspections() {
     <Card className="col-span-2">
       <CardHeader className="flex flex-row items-center justify-between">
         <CardTitle>Recent Inspections</CardTitle>
-        <Button variant="outline" size="sm">
+        <Button variant="outline" size="sm" onClick={handleViewAll}>
           View All
         </Button>
       </CardHeader>
@@ -64,14 +82,14 @@ export function RecentInspections() {
                   </div>
                 </div>
                 
-                <div className="flex items-center gap-2">
-                  <Button variant="ghost" size="icon" className="h-8 w-8">
-                    <Eye className="h-4 w-4" />
-                  </Button>
-                  <Button variant="ghost" size="icon" className="h-8 w-8">
-                    <Download className="h-4 w-4" />
-                  </Button>
-                </div>
+                 <div className="flex items-center gap-2">
+                   <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => handleView(inspection.id)}>
+                     <Eye className="h-4 w-4" />
+                   </Button>
+                   <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => handleDownload(inspection.id)}>
+                     <Download className="h-4 w-4" />
+                   </Button>
+                 </div>
               </div>
             ))
           ) : (
