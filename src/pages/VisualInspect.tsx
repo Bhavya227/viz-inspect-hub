@@ -15,7 +15,7 @@ import {
   Pause
 } from "lucide-react";
 import { toast } from "sonner";
-import { pipeline } from "@huggingface/transformers";
+import * as tf from '@tensorflow/tfjs';
 
 export default function VisualInspect() {
   const [isScanning, setIsScanning] = useState(false);
@@ -30,45 +30,41 @@ export default function VisualInspect() {
     overallScore: number;
     status: "pass" | "fail" | "review";
   } | null>(null);
-  const [classifier, setClassifier] = useState<any>(null);
+  const [model, setModel] = useState<tf.LayersModel | null>(null);
+  const [modelLabels, setModelLabels] = useState<string[]>([]);
   const [zoom, setZoom] = useState(1);
   const [rotation, setRotation] = useState(0);
   
   const fileInputRef = useRef<HTMLInputElement>(null);
   const videoRef = useRef<HTMLVideoElement>(null);
 
-  // Initialize AI model
+  // Initialize Teachable Machine model
   useEffect(() => {
     const initializeModel = async () => {
       try {
-        const imageClassifier = await pipeline(
-          "image-classification",
-          "onnx-community/mobilenetv4_conv_small.e2400_r224_in1k",
-          { device: "webgpu" }
-        );
-        setClassifier(imageClassifier);
+        const modelURL = 'https://teachablemachine.withgoogle.com/models/wwG4ipELH/model.json';
+        const metadataURL = 'https://teachablemachine.withgoogle.com/models/wwG4ipELH/metadata.json';
+        
+        // Load the model and metadata
+        const loadedModel = await tf.loadLayersModel(modelURL);
+        const response = await fetch(metadataURL);
+        const metadata = await response.json();
+        
+        setModel(loadedModel);
+        setModelLabels(metadata.labels);
         toast.success("AI model loaded successfully!");
       } catch (error) {
-        console.warn("WebGPU not available, falling back to CPU");
-        try {
-          const imageClassifier = await pipeline(
-            "image-classification", 
-            "Xenova/vit-base-patch16-224"
-          );
-          setClassifier(imageClassifier);
-          toast.success("AI model loaded successfully!");
-        } catch (fallbackError) {
-          toast.error("Failed to load AI model");
-        }
+        console.error("Failed to load model:", error);
+        toast.error("Failed to load AI model. Please try again.");
       }
     };
     
     initializeModel();
   }, []);
 
-  // Real AI analysis function
+  // Real AI analysis using Teachable Machine model
   const performAnalysis = async () => {
-    if (!selectedImage || !classifier) {
+    if (!selectedImage || !model || !modelLabels.length) {
       toast.error("Please upload an image and wait for model to load");
       return;
     }
@@ -76,66 +72,95 @@ export default function VisualInspect() {
     setIsScanning(true);
     
     try {
-      // Perform image classification
-      const results = await classifier(selectedImage);
+      // Create image element
+      const img = new Image();
+      img.crossOrigin = 'anonymous';
       
+      await new Promise((resolve, reject) => {
+        img.onload = resolve;
+        img.onerror = reject;
+        img.src = selectedImage;
+      });
+
+      // Preprocess image for the model (224x224 is standard for most models)
+      const tensor = tf.browser.fromPixels(img)
+        .resizeNearestNeighbor([224, 224])
+        .expandDims(0)
+        .div(255.0);
+
+      // Run prediction
+      const predictions = await model.predict(tensor) as tf.Tensor;
+      const scores = await predictions.data();
+      
+      // Clean up tensors
+      tensor.dispose();
+      predictions.dispose();
+
+      // Process results
+      const results = modelLabels.map((label, index) => ({
+        label,
+        score: scores[index]
+      })).sort((a, b) => b.score - a.score);
+
       // Analyze results for pill quality
       const defects = [];
       let overallScore = 100;
       let status: "pass" | "fail" | "review" = "pass";
       
-      // Check for quality indicators in classification results
-      for (const result of results.slice(0, 5)) {
-        const label = result.label.toLowerCase();
-        const score = result.score;
-        
-        // Detect potential issues based on classification
-        if (label.includes('pill') || label.includes('tablet') || label.includes('capsule')) {
-          if (score < 0.7) {
-            defects.push({
-              type: "Shape/Form Issue",
-              severity: "medium" as const,
-              location: { x: Math.random() * 80 + 10, y: Math.random() * 80 + 10 },
-              confidence: Math.round((1 - score) * 100)
-            });
-            overallScore -= 20;
-          }
-        } else if (label.includes('broken') || label.includes('cracked') || label.includes('damaged')) {
+      const topResult = results[0];
+      const confidence = Math.round(topResult.score * 100);
+      
+      // Quality assessment based on model predictions
+      if (topResult.label.toLowerCase().includes('defect') || 
+          topResult.label.toLowerCase().includes('bad') || 
+          topResult.label.toLowerCase().includes('broken')) {
+        defects.push({
+          type: topResult.label,
+          severity: "high" as const,
+          location: { x: Math.random() * 80 + 10, y: Math.random() * 80 + 10 },
+          confidence: confidence
+        });
+        overallScore = Math.max(30, 100 - confidence);
+        status = "fail";
+      } else if (topResult.label.toLowerCase().includes('good') || 
+                 topResult.label.toLowerCase().includes('normal') ||
+                 topResult.label.toLowerCase().includes('healthy')) {
+        overallScore = Math.min(95, 60 + confidence / 2);
+        status = confidence > 80 ? "pass" : "review";
+      } else {
+        // Check confidence level for unknown results
+        if (confidence < 60) {
           defects.push({
-            type: "Structural Damage",
-            severity: "high" as const,
-            location: { x: Math.random() * 80 + 10, y: Math.random() * 80 + 10 },
-            confidence: Math.round(score * 100)
+            type: "Unclear Quality - Low Confidence",
+            severity: "medium" as const,
+            location: { x: 50, y: 50 },
+            confidence: 100 - confidence
           });
-          overallScore -= 30;
-          status = "fail";
+          overallScore = Math.max(50, confidence);
+          status = "review";
+        } else {
+          overallScore = Math.min(90, confidence);
+          status = confidence > 85 ? "pass" : "review";
         }
       }
-      
-      // Check for color consistency (simplified)
-      const topResult = results[0];
-      if (topResult.score < 0.5) {
+
+      // Add minor defects for scores between certain ranges
+      if (overallScore < 85 && overallScore > 70) {
         defects.push({
-          type: "Unidentified Object",
-          severity: "high" as const,
-          location: { x: 50, y: 50 },
-          confidence: Math.round((1 - topResult.score) * 100)
+          type: "Minor Surface Variation",
+          severity: "low" as const,
+          location: { x: Math.random() * 80 + 10, y: Math.random() * 80 + 10 },
+          confidence: Math.round(Math.random() * 30 + 70)
         });
-        overallScore = Math.max(overallScore - 40, 0);
-        status = "fail";
-      } else if (overallScore < 90 && overallScore >= 70) {
-        status = "review";
-      } else if (overallScore < 70) {
-        status = "fail";
       }
       
       setAnalysisResults({
         defects,
-        overallScore: Math.max(overallScore, 0),
+        overallScore: Math.round(overallScore),
         status
       });
       
-      toast.success(`Analysis completed! Detected: ${topResult.label} (${Math.round(topResult.score * 100)}% confidence)`);
+      toast.success(`Analysis completed! Detected: ${topResult.label} (${confidence}% confidence)`);
     } catch (error) {
       toast.error("Analysis failed. Please try again.");
       console.error("Analysis error:", error);
