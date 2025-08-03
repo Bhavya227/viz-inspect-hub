@@ -8,6 +8,10 @@ import Index from "./pages/Index";
 import Inspections from "./pages/Inspections";
 import Analytics from "./pages/Analytics";
 import VisualInspect from "./pages/VisualInspect";
+import QualityMetrics from "./pages/QualityMetrics";
+import Issues from "./pages/Issues";
+import Team from "./pages/Team";
+import Settings from "./pages/Settings";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -24,6 +28,10 @@ const App = () => (
             <Route path="/inspections" element={<Inspections />} />
             <Route path="/analytics" element={<Analytics />} />
             <Route path="/visual-inspect" element={<VisualInspect />} />
+            <Route path="/quality-metrics" element={<QualityMetrics />} />
+            <Route path="/issues" element={<Issues />} />
+            <Route path="/team" element={<Team />} />
+            <Route path="/settings" element={<Settings />} />
             <Route path="*" element={<NotFound />} />
           </Routes>
         </DashboardLayout>
