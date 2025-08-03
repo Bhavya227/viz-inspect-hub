@@ -23,12 +23,17 @@ export default function VisualInspect() {
   const [analysisResults, setAnalysisResults] = useState<{
     defects: Array<{
       type: string;
+      category: "scratch" | "crack" | "contamination" | "color" | "imprint" | "other";
       severity: "low" | "medium" | "high";
       location: { x: number; y: number };
       confidence: number;
     }>;
     overallScore: number;
     status: "pass" | "fail" | "review";
+    detectionResults: Array<{
+      label: string;
+      confidence: number;
+    }>;
   } | null>(null);
   const [model, setModel] = useState<tf.LayersModel | null>(null);
   const [modelLabels, setModelLabels] = useState<string[]>([]);
@@ -99,68 +104,84 @@ export default function VisualInspect() {
       // Process results
       const results = modelLabels.map((label, index) => ({
         label,
-        score: scores[index]
+        score: scores[index],
+        confidence: Math.round(scores[index] * 100)
       })).sort((a, b) => b.score - a.score);
+
+      // Categorize defects based on model labels
+      const categorizeDefect = (label: string) => {
+        const labelLower = label.toLowerCase();
+        if (labelLower.includes('scratch')) return 'scratch';
+        if (labelLower.includes('crack')) return 'crack';
+        if (labelLower.includes('contamination')) return 'contamination';
+        if (labelLower.includes('color')) return 'color';
+        if (labelLower.includes('imprint')) return 'imprint';
+        return 'other';
+      };
 
       // Analyze results for pill quality
       const defects = [];
       let overallScore = 100;
       let status: "pass" | "fail" | "review" = "pass";
       
-      const topResult = results[0];
-      const confidence = Math.round(topResult.score * 100);
-      
-      // Quality assessment based on model predictions
-      if (topResult.label.toLowerCase().includes('defect') || 
-          topResult.label.toLowerCase().includes('bad') || 
-          topResult.label.toLowerCase().includes('broken')) {
-        defects.push({
-          type: topResult.label,
-          severity: "high" as const,
-          location: { x: Math.random() * 80 + 10, y: Math.random() * 80 + 10 },
-          confidence: confidence
-        });
-        overallScore = Math.max(30, 100 - confidence);
-        status = "fail";
-      } else if (topResult.label.toLowerCase().includes('good') || 
-                 topResult.label.toLowerCase().includes('normal') ||
-                 topResult.label.toLowerCase().includes('healthy')) {
-        overallScore = Math.min(95, 60 + confidence / 2);
-        status = confidence > 80 ? "pass" : "review";
-      } else {
-        // Check confidence level for unknown results
-        if (confidence < 60) {
+      // Check all results with significant confidence
+      for (const result of results) {
+        const confidence = result.confidence;
+        const labelLower = result.label.toLowerCase();
+        
+        if (confidence > 30 && !labelLower.includes('good') && !labelLower.includes('pill type')) {
+          const severity = confidence > 70 ? "high" : confidence > 40 ? "medium" : "low";
+          const category = categorizeDefect(result.label);
+          
           defects.push({
-            type: "Unclear Quality - Low Confidence",
-            severity: "medium" as const,
-            location: { x: 50, y: 50 },
-            confidence: 100 - confidence
+            type: result.label,
+            category,
+            severity: severity as "low" | "medium" | "high",
+            location: { 
+              x: Math.random() * 80 + 10, 
+              y: Math.random() * 80 + 10 
+            },
+            confidence: confidence
           });
-          overallScore = Math.max(50, confidence);
-          status = "review";
-        } else {
-          overallScore = Math.min(90, confidence);
-          status = confidence > 85 ? "pass" : "review";
         }
       }
-
-      // Add minor defects for scores between certain ranges
-      if (overallScore < 85 && overallScore > 70) {
-        defects.push({
-          type: "Minor Surface Variation",
-          severity: "low" as const,
-          location: { x: Math.random() * 80 + 10, y: Math.random() * 80 + 10 },
-          confidence: Math.round(Math.random() * 30 + 70)
-        });
+      
+      // Calculate overall score based on defects
+      if (defects.length > 0) {
+        const highSeverityDefects = defects.filter(d => d.severity === "high").length;
+        const mediumSeverityDefects = defects.filter(d => d.severity === "medium").length;
+        
+        if (highSeverityDefects > 0) {
+          overallScore = Math.max(20, 100 - (highSeverityDefects * 40) - (mediumSeverityDefects * 20));
+          status = "fail";
+        } else if (mediumSeverityDefects > 0) {
+          overallScore = Math.max(50, 100 - (mediumSeverityDefects * 25));
+          status = "review";
+        } else {
+          overallScore = Math.max(70, 100 - (defects.length * 15));
+          status = "review";
+        }
+      } else {
+        // Check if "Good" was detected with high confidence
+        const goodResult = results.find(r => r.label.toLowerCase().includes('good'));
+        if (goodResult && goodResult.confidence > 60) {
+          overallScore = Math.min(95, 70 + goodResult.confidence / 3);
+          status = "pass";
+        } else {
+          overallScore = 85;
+          status = "pass";
+        }
       }
       
       setAnalysisResults({
         defects,
         overallScore: Math.round(overallScore),
-        status
+        status,
+        detectionResults: results.slice(0, 5) // Top 5 results
       });
       
-      toast.success(`Analysis completed! Detected: ${topResult.label} (${confidence}% confidence)`);
+      const primaryResult = results[0];
+      toast.success(`Analysis completed! Primary detection: ${primaryResult.label} (${primaryResult.confidence}% confidence)`);
     } catch (error) {
       toast.error("Analysis failed. Please try again.");
       console.error("Analysis error:", error);
@@ -440,32 +461,48 @@ Generated by AI Quality Inspection System
                   <p className="text-3xl font-bold text-primary">{analysisResults.overallScore}%</p>
                 </div>
 
+                {/* Defect Categories */}
                 <div className="space-y-3">
-                  <h4 className="font-medium">Detected Issues</h4>
-                  {analysisResults.defects.length > 0 ? (
-                    analysisResults.defects.map((defect, index) => (
-                      <div key={index} className="flex items-center justify-between p-3 rounded-lg border">
-                        <div>
-                          <p className="font-medium">{defect.type}</p>
-                          <p className="text-sm text-muted-foreground">
-                            Location: {defect.location.x}%, {defect.location.y}%
-                          </p>
+                  <h4 className="font-medium">Anomaly Categories</h4>
+                  <div className="grid grid-cols-2 gap-3">
+                    {['scratch', 'crack', 'contamination', 'color', 'imprint', 'other'].map(category => {
+                      const categoryDefects = analysisResults.defects.filter(d => d.category === category);
+                      const count = categoryDefects.length;
+                      const hasIssues = count > 0;
+                      
+                      return (
+                        <div key={category} className={`p-3 rounded-lg border ${hasIssues ? 'border-destructive/50 bg-destructive/10' : 'border-success/50 bg-success/10'}`}>
+                          <div className="flex items-center justify-between">
+                            <span className="text-sm font-medium capitalize">{category}</span>
+                            <Badge variant={hasIssues ? "destructive" : "default"} className="text-xs">
+                              {hasIssues ? `${count} found` : 'OK'}
+                            </Badge>
+                          </div>
+                          {hasIssues && (
+                            <div className="mt-2 space-y-1">
+                              {categoryDefects.map((defect, idx) => (
+                                <div key={idx} className="text-xs text-muted-foreground">
+                                  {defect.type} ({defect.confidence}%)
+                                </div>
+                              ))}
+                            </div>
+                          )}
                         </div>
-                        <div className="text-right space-y-1">
-                          <Badge className={getSeverityColor(defect.severity)}>
-                            {defect.severity}
-                          </Badge>
-                          <p className="text-xs text-muted-foreground">
-                            {defect.confidence}% confidence
-                          </p>
-                        </div>
-                      </div>
-                    ))
-                  ) : (
-                    <p className="text-sm text-muted-foreground text-center py-4">
-                      No defects detected
-                    </p>
-                  )}
+                      );
+                    })}
+                  </div>
+                </div>
+
+                <div className="space-y-3">
+                  <h4 className="font-medium">Detection Results</h4>
+                  {analysisResults.detectionResults.map((result, index) => (
+                    <div key={index} className="flex items-center justify-between p-2 rounded border-l-4 border-l-primary/30">
+                      <span className="text-sm">{result.label}</span>
+                      <Badge variant="outline" className="text-xs">
+                        {result.confidence}%
+                      </Badge>
+                    </div>
+                  ))}
                 </div>
 
                  <div className="flex gap-2">
