@@ -16,24 +16,20 @@ import {
 } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { toast } from "sonner";
-
-// Dynamic data - will be populated when user performs inspections
-const inspections: Array<{
-  id: string;
-  productName: string;
-  batchNumber: string;
-  inspector: string;
-  status: "passed" | "failed" | "pending";
-  score: number;
-  date: string;
-  time: string;
-  issues: number;
-  location: string;
-}> = [];
+import { useAppStore } from "@/lib/store";
 
 export default function Inspections() {
+  const { inspections } = useAppStore();
   const [searchTerm, setSearchTerm] = useState("");
   const navigate = useNavigate();
+
+  // Filter inspections based on search term
+  const filteredInspections = inspections.filter(inspection => 
+    inspection.productName.toLowerCase().includes(searchTerm.toLowerCase()) ||
+    inspection.id.toLowerCase().includes(searchTerm.toLowerCase()) ||
+    inspection.inspector.toLowerCase().includes(searchTerm.toLowerCase()) ||
+    inspection.batchNumber.toLowerCase().includes(searchTerm.toLowerCase())
+  );
 
   const handleNewInspection = () => {
     navigate('/visual-inspect');
@@ -107,8 +103,8 @@ export default function Inspections() {
 
       {/* Inspections List */}
       <div className="space-y-4">
-        {inspections.length > 0 ? (
-          inspections.map((inspection) => (
+        {filteredInspections.length > 0 ? (
+          filteredInspections.map((inspection) => (
             <Card key={inspection.id} className="hover:shadow-md transition-shadow">
               <CardContent className="p-6">
                 <div className="flex items-center justify-between">

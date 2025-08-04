@@ -16,8 +16,10 @@ import {
 } from "lucide-react";
 import { toast } from "sonner";
 import * as tf from '@tensorflow/tfjs';
+import { useAppStore, Inspection } from "@/lib/store";
 
 export default function VisualInspect() {
+  const { addInspection } = useAppStore();
   const [isScanning, setIsScanning] = useState(false);
   const [selectedImage, setSelectedImage] = useState<string | null>(null);
   const [analysisResults, setAnalysisResults] = useState<{
@@ -249,10 +251,29 @@ export default function VisualInspect() {
       return;
     }
     
+    // Create inspection record for global store
+    const inspection: Inspection = {
+      id: `INS-${Date.now()}`,
+      productName: "Quality Inspection Sample",
+      batchNumber: `BATCH-${Date.now().toString().slice(-4)}`,
+      inspector: "Rajesh Kumar", // Current user
+      status: analysisResults.status === "pass" ? "passed" : analysisResults.status === "fail" ? "failed" : "pending",
+      score: analysisResults.overallScore,
+      date: new Date().toLocaleDateString(),
+      time: new Date().toLocaleTimeString(),
+      issues: analysisResults.defects.length,
+      location: "Manufacturing Unit - Bangalore",
+      defects: analysisResults.defects
+    };
+    
+    // Add to global store
+    addInspection(inspection);
+    
     const report = {
       timestamp: new Date().toISOString(),
       image: selectedImage,
-      results: analysisResults
+      results: analysisResults,
+      inspection
     };
     
     const dataStr = JSON.stringify(report, null, 2);
@@ -265,7 +286,7 @@ export default function VisualInspect() {
     linkElement.setAttribute('download', exportFileDefaultName);
     linkElement.click();
     
-    toast.success("Report saved successfully!");
+    toast.success("Inspection saved and synced to dashboard!");
   };
 
   const exportReport = () => {
