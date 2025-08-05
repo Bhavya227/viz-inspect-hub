@@ -6,6 +6,7 @@ import { BrowserRouter, Routes, Route } from "react-router-dom";
 import { DashboardLayout } from "./components/DashboardLayout";
 import Index from "./pages/Index";
 import Inspections from "./pages/Inspections";
+import Reports from "./pages/Reports";
 import Analytics from "./pages/Analytics";
 import VisualInspect from "./pages/VisualInspect";
 import QualityMetrics from "./pages/QualityMetrics";
@@ -26,6 +27,7 @@ const App = () => (
           <Routes>
             <Route path="/" element={<Index />} />
             <Route path="/inspections" element={<Inspections />} />
+            <Route path="/reports" element={<Reports />} />
             <Route path="/analytics" element={<Analytics />} />
             <Route path="/visual-inspect" element={<VisualInspect />} />
             <Route path="/quality-metrics" element={<QualityMetrics />} />
