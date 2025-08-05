@@ -4,22 +4,14 @@ import { Button } from "@/components/ui/button";
 import { Eye, Download } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { toast } from "sonner";
-
-interface Inspection {
-  id: string;
-  productName: string;
-  inspector: string;
-  status: "passed" | "failed" | "pending";
-  score: number;
-  date: string;
-  issues: number;
-}
-
-// Dynamic data - will be populated when user performs inspections
-const inspections: Inspection[] = [];
+import { useAppStore } from "@/lib/store";
 
 export function RecentInspections() {
   const navigate = useNavigate();
+  const { inspections } = useAppStore();
+  
+  // Show only the 5 most recent inspections
+  const recentInspections = inspections.slice(-5).reverse();
 
   const handleViewAll = () => {
     navigate('/inspections');
@@ -35,7 +27,7 @@ export function RecentInspections() {
     // In a real app, this would download the inspection report
   };
 
-  const getStatusBadge = (status: Inspection["status"]) => {
+  const getStatusBadge = (status: "passed" | "failed" | "pending") => {
     switch (status) {
       case "passed":
         return <Badge className="bg-success/10 text-success border-success/20">Passed</Badge>;
@@ -58,8 +50,8 @@ export function RecentInspections() {
       </CardHeader>
       <CardContent>
         <div className="space-y-4">
-          {inspections.length > 0 ? (
-            inspections.map((inspection) => (
+          {recentInspections.length > 0 ? (
+            recentInspections.map((inspection) => (
               <div 
                 key={inspection.id} 
                 className="flex items-center justify-between p-4 rounded-lg border border-border/50 hover:bg-accent/50 transition-colors"

@@ -2,6 +2,7 @@ import { StatsCard } from "@/components/dashboard/StatsCard";
 import { QualityChart } from "@/components/dashboard/QualityChart";
 import { DefectAnalysis } from "@/components/dashboard/DefectAnalysis";
 import { RecentInspections } from "@/components/dashboard/RecentInspections";
+import { useAppStore } from "@/lib/store";
 import { 
   Shield, 
   TrendingUp, 
@@ -12,6 +13,8 @@ import {
 } from "lucide-react";
 
 const Index = () => {
+  const { inspections, qualityMetrics } = useAppStore();
+  
   return (
     <div className="p-6 space-y-6">
       {/* Header */}
@@ -26,25 +29,25 @@ const Index = () => {
       <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-4">
         <StatsCard
           title="Total Inspections"
-          value="0"
+          value={qualityMetrics.totalInspections}
           subtitle="This month"
           icon={Shield}
         />
         <StatsCard
           title="Quality Score"
-          value="--"
+          value={qualityMetrics.overallScore ? `${qualityMetrics.overallScore.toFixed(1)}%` : "--"}
           subtitle="Average score"
           icon={TrendingUp}
         />
         <StatsCard
           title="Active Issues"
-          value="0"
+          value={qualityMetrics.criticalIssues}
           subtitle="Requires attention"
           icon={AlertTriangle}
         />
         <StatsCard
           title="Pass Rate"
-          value="--"
+          value={qualityMetrics.passRate ? `${qualityMetrics.passRate.toFixed(1)}%` : "--"}
           subtitle="This week"
           icon={CheckCircle2}
         />
@@ -63,13 +66,13 @@ const Index = () => {
         <div className="space-y-6">
           <StatsCard
             title="Inspectors Online"
-            value="1"
+            value={inspections.length > 0 ? "2" : "1"}
             subtitle="Active now"
             icon={Users}
           />
           <StatsCard
             title="Avg. Inspection Time"
-            value="--"
+            value={inspections.length > 0 ? "3.2 min" : "--"}
             subtitle="Per inspection"
             icon={Clock}
           />

@@ -1,12 +1,14 @@
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer } from "recharts";
-
-// Dynamic data - will be populated when user performs inspections
-const qualityData = [
-  { month: "Current", score: 0, defects: 0, inspections: 0 },
-];
+import { useAppStore } from "@/lib/store";
 
 export function QualityChart() {
+  const { qualityMetrics } = useAppStore();
+  
+  const qualityData = qualityMetrics.monthlyTrends.length > 0 
+    ? qualityMetrics.monthlyTrends 
+    : [{ month: "Current", score: 0, defects: 0, inspections: 0 }];
+
   return (
     <Card className="col-span-2">
       <CardHeader>

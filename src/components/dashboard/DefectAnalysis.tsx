@@ -1,12 +1,14 @@
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { PieChart, Pie, Cell, ResponsiveContainer, Tooltip, Legend } from "recharts";
-
-// Dynamic data - will be populated when user performs inspections
-const defectData = [
-  { name: "No data yet", value: 100, color: "hsl(var(--muted))" },
-];
+import { useAppStore } from "@/lib/store";
 
 export function DefectAnalysis() {
+  const { qualityMetrics } = useAppStore();
+  
+  const defectData = qualityMetrics.defectTypes.length > 0 
+    ? qualityMetrics.defectTypes
+    : [{ name: "No data yet", value: 100, color: "hsl(var(--muted))" }];
+
   return (
     <Card>
       <CardHeader>
