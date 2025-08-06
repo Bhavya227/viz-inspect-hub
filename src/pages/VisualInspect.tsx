@@ -41,6 +41,9 @@ export default function VisualInspect() {
   const [modelLabels, setModelLabels] = useState<string[]>([]);
   const [zoom, setZoom] = useState(1);
   const [rotation, setRotation] = useState(0);
+  const [isCameraActive, setIsCameraActive] = useState(false);
+  const [isLiveAnalysis, setIsLiveAnalysis] = useState(false);
+  const [liveAnalysisInterval, setLiveAnalysisInterval] = useState<NodeJS.Timeout | null>(null);
   
   const fileInputRef = useRef<HTMLInputElement>(null);
   const videoRef = useRef<HTMLVideoElement>(null);
@@ -206,12 +209,38 @@ export default function VisualInspect() {
 
   const startCamera = async () => {
     try {
-      const stream = await navigator.mediaDevices.getUserMedia({ video: true });
+      const stream = await navigator.mediaDevices.getUserMedia({ 
+        video: { 
+          width: 640, 
+          height: 480,
+          facingMode: 'environment' // Use back camera on mobile
+        } 
+      });
       if (videoRef.current) {
         videoRef.current.srcObject = stream;
+        setIsCameraActive(true);
+        setSelectedImage(null);
+        setAnalysisResults(null);
+        toast.success("Camera activated! Click 'Start Live Analysis' for real-time scanning.");
       }
     } catch (error) {
-      toast.error("Camera access denied");
+      toast.error("Camera access denied. Please allow camera permissions.");
+      console.error("Camera error:", error);
+    }
+  };
+
+  const stopCamera = () => {
+    if (videoRef.current?.srcObject) {
+      const stream = videoRef.current.srcObject as MediaStream;
+      stream.getTracks().forEach(track => track.stop());
+      videoRef.current.srcObject = null;
+      setIsCameraActive(false);
+      setIsLiveAnalysis(false);
+      if (liveAnalysisInterval) {
+        clearInterval(liveAnalysisInterval);
+        setLiveAnalysisInterval(null);
+      }
+      toast.success("Camera stopped");
     }
   };
 
@@ -230,10 +259,93 @@ export default function VisualInspect() {
         setAnalysisResults(null);
         
         // Stop camera
-        const stream = videoRef.current.srcObject as MediaStream;
-        stream?.getTracks().forEach(track => track.stop());
+        stopCamera();
         toast.success("Photo captured! Ready for analysis.");
       }
+    }
+  };
+
+  const performLiveAnalysis = async () => {
+    if (!videoRef.current || !model || !modelLabels.length || !isCameraActive) {
+      return;
+    }
+
+    try {
+      const canvas = document.createElement('canvas');
+      const context = canvas.getContext('2d');
+      
+      canvas.width = videoRef.current.videoWidth;
+      canvas.height = videoRef.current.videoHeight;
+      
+      if (context && videoRef.current.videoWidth > 0) {
+        context.drawImage(videoRef.current, 0, 0);
+        
+        // Convert to tensor for analysis
+        const tensor = tf.browser.fromPixels(canvas)
+          .resizeNearestNeighbor([224, 224])
+          .expandDims(0)
+          .div(255.0);
+
+        // Run prediction
+        const predictions = await model.predict(tensor) as tf.Tensor;
+        const scores = await predictions.data();
+        
+        // Clean up tensors
+        tensor.dispose();
+        predictions.dispose();
+
+        // Process results quickly
+        const results = modelLabels.map((label, index) => ({
+          label,
+          score: scores[index],
+          confidence: Math.round(scores[index] * 100)
+        })).sort((a, b) => b.score - a.score);
+
+        // Quick quality assessment
+        const goodResult = results.find(r => r.label.toLowerCase().includes('good'));
+        const hasDefects = results.some(r => r.confidence > 30 && !r.label.toLowerCase().includes('good'));
+        
+        const quickAnalysis = {
+          defects: hasDefects ? [{
+            type: results[0].label,
+            category: "other" as const,
+            severity: results[0].confidence > 70 ? "high" as const : "medium" as const,
+            location: { x: 50, y: 50 },
+            confidence: results[0].confidence
+          }] : [],
+          overallScore: goodResult ? Math.min(95, 70 + goodResult.confidence / 3) : (hasDefects ? 60 : 85),
+          status: (goodResult && goodResult.confidence > 70) ? "pass" as const : 
+                 (hasDefects && results[0].confidence > 70) ? "fail" as const : "review" as const,
+          detectionResults: results.slice(0, 3)
+        };
+
+        setAnalysisResults(quickAnalysis);
+      }
+    } catch (error) {
+      console.error("Live analysis error:", error);
+    }
+  };
+
+  const toggleLiveAnalysis = () => {
+    if (isLiveAnalysis) {
+      // Stop live analysis
+      if (liveAnalysisInterval) {
+        clearInterval(liveAnalysisInterval);
+        setLiveAnalysisInterval(null);
+      }
+      setIsLiveAnalysis(false);
+      toast.success("Live analysis stopped");
+    } else {
+      // Start live analysis
+      if (!model || !modelLabels.length) {
+        toast.error("Please wait for AI model to load");
+        return;
+      }
+      
+      const interval = setInterval(performLiveAnalysis, 2000); // Analyze every 2 seconds
+      setLiveAnalysisInterval(interval);
+      setIsLiveAnalysis(true);
+      toast.success("Live analysis started! Point camera at products for real-time scanning.");
     }
   };
 
@@ -357,10 +469,17 @@ Generated by AI Quality Inspection System
             <Upload className="mr-2 h-4 w-4" />
             Upload Image
           </Button>
-          <Button variant="outline" onClick={startCamera}>
-            <Camera className="mr-2 h-4 w-4" />
-            Use Camera
-          </Button>
+          {!isCameraActive ? (
+            <Button variant="outline" onClick={startCamera}>
+              <Camera className="mr-2 h-4 w-4" />
+              Start Camera
+            </Button>
+          ) : (
+            <Button variant="outline" onClick={stopCamera}>
+              <Pause className="mr-2 h-4 w-4" />
+              Stop Camera
+            </Button>
+          )}
         </div>
       </div>
 
@@ -379,27 +498,60 @@ Generated by AI Quality Inspection System
             <CardTitle>Image Analysis</CardTitle>
           </CardHeader>
           <CardContent className="space-y-4">
-            {!selectedImage && !videoRef.current?.srcObject && (
+            {!selectedImage && !isCameraActive && (
               <div className="aspect-video border-2 border-dashed border-border rounded-lg flex items-center justify-center bg-accent/20">
                 <div className="text-center">
                   <Camera className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
-                  <p className="text-muted-foreground">Upload an image or use camera to start analysis</p>
+                  <p className="text-muted-foreground">Upload an image or start camera for live analysis</p>
                 </div>
               </div>
             )}
 
-            {videoRef.current?.srcObject && !selectedImage && (
+            {isCameraActive && !selectedImage && (
               <div className="space-y-4">
-                <video 
-                  ref={videoRef} 
-                  autoPlay 
-                  playsInline 
-                  className="w-full aspect-video rounded-lg border"
-                />
-                <Button onClick={capturePhoto} className="w-full">
-                  <Camera className="mr-2 h-4 w-4" />
-                  Capture Photo
-                </Button>
+                <div className="relative">
+                  <video 
+                    ref={videoRef} 
+                    autoPlay 
+                    playsInline 
+                    className="w-full aspect-video rounded-lg border"
+                  />
+                  {isLiveAnalysis && (
+                    <div className="absolute top-2 right-2 bg-destructive text-destructive-foreground px-2 py-1 rounded text-xs font-medium flex items-center gap-1">
+                      <div className="w-2 h-2 bg-red-500 rounded-full animate-pulse"></div>
+                      LIVE ANALYSIS
+                    </div>
+                  )}
+                  {analysisResults && isCameraActive && (
+                    <div className="absolute bottom-2 left-2 bg-background/90 backdrop-blur-sm p-2 rounded text-xs">
+                      <Badge className={getStatusColor(analysisResults.status)}>
+                        {analysisResults.status.toUpperCase()} - {analysisResults.overallScore}%
+                      </Badge>
+                    </div>
+                  )}
+                </div>
+                <div className="flex gap-2">
+                  <Button onClick={capturePhoto} variant="outline" className="flex-1">
+                    <Camera className="mr-2 h-4 w-4" />
+                    Capture Photo
+                  </Button>
+                  <Button 
+                    onClick={toggleLiveAnalysis} 
+                    className={`flex-1 ${isLiveAnalysis ? 'bg-destructive hover:bg-destructive/90' : 'bg-primary hover:bg-primary/90'}`}
+                  >
+                    {isLiveAnalysis ? (
+                      <>
+                        <Pause className="mr-2 h-4 w-4" />
+                        Stop Live Analysis
+                      </>
+                    ) : (
+                      <>
+                        <Play className="mr-2 h-4 w-4" />
+                        Start Live Analysis
+                      </>
+                    )}
+                  </Button>
+                </div>
               </div>
             )}
 
